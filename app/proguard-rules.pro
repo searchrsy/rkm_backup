@@ -14,8 +14,10 @@
 -keep class com.example.update.UpdateData { *; }
 -keep class com.example.update.UpdateDataJsonAdapter { *; }
 
-# Keep osmdroid
--keep class org.osmdroid.** { *; }
+# Keep osmdroid (hanya konstruktor arsip refleksi yang dipertahankan; selebihnya dipangkas R8)
+-keepclassmembers class * implements org.osmdroid.tileprovider.modules.IArchiveFile {
+    public <init>();
+}
 -dontwarn org.osmdroid.**
 
 # OkHttp optional TLS providers

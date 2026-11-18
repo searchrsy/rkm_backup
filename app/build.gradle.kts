@@ -136,7 +136,19 @@ android {
       excludes += listOf(
         "META-INF/AL2.0",
         "META-INF/LGPL2.1",
+        "META-INF/ASL2.0",
+        "META-INF/LICENSE*",
+        "META-INF/NOTICE*",
+        "META-INF/DEPENDENCIES",
+        "META-INF/INDEX.LIST",
+        "META-INF/*.txt",
+        "META-INF/*.md",
         "META-INF/*.version",
+        "META-INF/*.kotlin_module",
+        "META-INF/com/android/build/gradle/app-metadata.properties",
+        "META-INF/version-control-info.textproto",
+        "**/*.kotlin_metadata",
+        "okhttp3/internal/publicsuffix/NOTICE",
         "DebugProbesKt.bin",
         "kotlin-tooling-metadata.json",
         "keystore.properties",
@@ -197,7 +209,6 @@ dependencies {
   // implementation(libs.firebase.appcheck.debug)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
-  implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
   // implementation(libs.play.services.location)
