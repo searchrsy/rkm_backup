@@ -46,6 +46,7 @@ data class MainUiState(
     val loginError: String? = null,
     val cabangLabel: String = "",
     val loginSubtitle: String = "",
+    val logoUrl: String = "",
     val salesmen: List<SalesmanOption> = emptyList(),
     val loginConfigLoading: Boolean = false,
     val loginConfigError: String? = null,
@@ -89,6 +90,7 @@ class MainViewModel(
         MainUiState(
             cabangLabel = sessionManager.getCachedLoginConfig()?.cabangLabel.orEmpty(),
             loginSubtitle = sessionManager.getCachedLoginConfig()?.subtitle.orEmpty(),
+            logoUrl = sessionManager.getCachedLoginConfig()?.logoUrl.orEmpty(),
             salesmen = sessionManager.getCachedLoginConfig()?.salesmen.orEmpty(),
             isLoggedIn = sessionManager.isLoggedIn,
             kodeSalesman = sessionManager.kodeSalesman ?: "",
@@ -124,6 +126,7 @@ class MainViewModel(
                         it.copy(
                             cabangLabel = body.cabangLabel.orEmpty(),
                             loginSubtitle = body.subtitle.orEmpty(),
+                            logoUrl = body.logoUrl.orEmpty(),
                             salesmen = body.salesmen.orEmpty().filter { s -> s.kodeSalesman.isNotBlank() },
                             loginConfigLoading = false,
                             loginConfigError = null

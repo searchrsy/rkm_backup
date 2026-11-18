@@ -24,6 +24,7 @@ data class LoginConfigResponse(
     @Json(name = "success") val success: Boolean,
     @Json(name = "cabang_label") val cabangLabel: String?,
     @Json(name = "subtitle") val subtitle: String?,
+    @Json(name = "logo_url") val logoUrl: String? = null,
     @Json(name = "salesmen") val salesmen: List<SalesmanOption>?
 )
 

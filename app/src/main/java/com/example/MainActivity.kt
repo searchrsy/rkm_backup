@@ -141,6 +141,7 @@ class MainActivity : ComponentActivity() {
                             errorMessage = state.loginError,
                             cabangLabel = state.cabangLabel,
                             subtitle = state.loginSubtitle,
+                            logoUrl = state.logoUrl,
                             salesmen = state.salesmen,
                             configLoading = state.loginConfigLoading,
                             configError = state.loginConfigError,
