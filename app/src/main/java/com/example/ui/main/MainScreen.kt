@@ -66,6 +66,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.config.AppConfig
 import com.example.data.model.MemberItem
 import com.example.ui.components.LaporanDialog
 import com.example.ui.components.MemberCard
@@ -570,7 +571,7 @@ private fun MemberListSection(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Hubungi supervisor atau admin SPI Batu jika rencana kunjungan belum diterbitkan.",
+                    text = "Hubungi supervisor atau admin SPI ${AppConfig.CABANG_NAMA} jika rencana kunjungan belum diterbitkan.",
                     fontSize = 12.sp,
                     color = TextGray,
                     textAlign = TextAlign.Center

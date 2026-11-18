@@ -93,6 +93,8 @@ class MainViewModel(
             logoUrl = sessionManager.getCachedLoginConfig()?.logoUrl.orEmpty(),
             salesmen = sessionManager.getCachedLoginConfig()?.salesmen.orEmpty(),
             isLoggedIn = sessionManager.isLoggedIn,
+            // Jika belum login, layar login langsung tampil loading sampai config server selesai dimuat
+            loginConfigLoading = !sessionManager.isLoggedIn,
             kodeSalesman = sessionManager.kodeSalesman ?: "",
             namaSalesman = sessionManager.namaSalesman ?: "",
             token = sessionManager.token,

@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.io.StringReader
 import java.util.Properties
 
 plugins {
@@ -9,18 +10,61 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+// ---------------------------------------------------------------------------
+// Konfigurasi cabang: SATU file (cabang.properties di root proyek).
+// Cabang lain? Edit file itu saja, atau simpan banyak file di cabang/<nama>.properties
+// lalu build dengan:  ./gradlew assembleRelease -Pcabang=<nama>
+// ---------------------------------------------------------------------------
+val cabangFileProvider = providers.gradleProperty("cabang")
+  .map { "cabang/$it.properties" }
+  .orElse("cabang.properties")
+val cabangText = providers
+  .fileContents(rootProject.layout.projectDirectory.file(cabangFileProvider))
+  .asText
+  .getOrElse("")
+if (cabangText.isBlank()) {
+  throw GradleException("File konfigurasi cabang tidak ditemukan / kosong: ${cabangFileProvider.get()}")
+}
+val cabangProps = Properties().apply { load(StringReader(cabangText)) }
+fun cabang(key: String, default: String = ""): String =
+  cabangProps.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() } ?: default
+fun cabangWajib(key: String): String =
+  cabang(key).ifEmpty { throw GradleException("cabang.properties: '$key' wajib diisi.") }
+fun q(v: String) = "\"" + v.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+val cNama = cabangWajib("CABANG_NAMA")
+val cSlug = cNama.lowercase().replace(Regex("[^a-z0-9]"), "")
+val cKode = cabang("CABANG_KODE")
+val cAppName = cabang("APP_NAME", "RKM SPI $cNama")
+val cLabel = cabang("LABEL", (cNama + if (cKode.isNotEmpty()) " - $cKode" else "").uppercase())
+val cSubtitle = cabang("SUBTITLE", "Stock Point Indogrosir $cNama")
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.rkmspibatu.phegdw"
+    applicationId = cabang("APPLICATION_ID", "com.aistudio.rkmspi.$cSlug")
     minSdk = 26
     targetSdk = 36
     versionCode = 5
     versionName = "1.0.4"
 
     buildConfigField("boolean", "UPDATE_FEATURE_ENABLED", "true")
+
+    // Nilai cabang (dari cabang.properties) -> dibaca lewat AppConfig.kt
+    resValue("string", "app_name", cAppName)
+    buildConfigField("String", "APP_NAME", q(cAppName))
+    buildConfigField("String", "CABANG_NAMA", q(cNama))
+    buildConfigField("String", "CABANG_LABEL", q(cLabel))
+    buildConfigField("String", "CABANG_SUBTITLE", q(cSubtitle))
+    buildConfigField("String", "SERVER_HOST", q(cabangWajib("SERVER_HOST")))
+    buildConfigField("String", "APP_PATH", q(cabang("APP_PATH", "/sales-gps-dashboard")))
+    buildConfigField("String", "API_KEY", q(cabangWajib("API_KEY")))
+    buildConfigField("String", "TIMEZONE", q(cabang("TIMEZONE", "Asia/Jakarta")))
+    buildConfigField("int", "CONFIG_VERSION", cabang("CONFIG_VERSION", "1").toInt().toString())
+    buildConfigField("double", "MAP_LAT", cabang("MAP_LAT", "-2.5").toDouble().toString())
+    buildConfigField("double", "MAP_LNG", cabang("MAP_LNG", "118.0").toDouble().toString())
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
@@ -84,6 +128,7 @@ android {
   buildFeatures {
     compose = true
     buildConfig = true
+    resValues = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   packaging {

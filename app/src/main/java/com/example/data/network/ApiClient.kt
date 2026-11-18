@@ -1,5 +1,6 @@
 package com.example.data.network
 
+import com.example.config.AppConfig
 import com.example.data.local.SessionManager
 import com.example.data.model.LokasiSalesItem
 import com.example.data.model.RiwayatGroupItem
@@ -57,7 +58,7 @@ object ApiClient {
             val original = chain.request()
             val request = original.newBuilder()
                 .header("ngrok-skip-browser-warning", "true")
-                .header("User-Agent", "RKMSPIBatu-Android/1.0")
+                .header("User-Agent", AppConfig.USER_AGENT)
                 .build()
             return chain.proceed(request)
         }

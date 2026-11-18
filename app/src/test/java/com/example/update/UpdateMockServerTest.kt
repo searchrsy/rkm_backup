@@ -303,7 +303,7 @@ class UpdateMockServerTest {
     @Test
     fun `test full successful download with streaming and sha verification`() {
         runBlocking {
-            val fileContent = "Ini berkas APK valid SPI Batu 2026 byte array".toByteArray()
+            val fileContent = "Ini berkas APK valid SPI 2026 byte array".toByteArray()
             val expectedSha = sha256(fileContent)
             val downloadPath = "/sales-gps-dashboard/apk/apk/app-release.apk"
 

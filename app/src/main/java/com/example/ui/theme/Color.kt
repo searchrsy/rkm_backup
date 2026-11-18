@@ -2,7 +2,7 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Palet warna resmi RKM SPI Batu
+// Palet warna resmi RKM SPI
 val NavyPrimary = Color(0xFF17365D)
 val BlueSecondary = Color(0xFF2F6690)
 val SurfaceWhite = Color(0xFFFFFFFF)

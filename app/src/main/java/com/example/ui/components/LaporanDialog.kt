@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.config.AppConfig
 import com.example.data.model.DraftLaporan
 import com.example.data.model.MemberItem
 import com.example.ui.theme.BgLightGray
@@ -147,9 +148,9 @@ fun LaporanDialog(
         showHasilError = false
     }
 
-    // Dialog Pemilih Tanggal Follow Up (WIB / Asia/Jakarta)
+    // Dialog Pemilih Tanggal Follow Up (zona waktu cabang)
     val openDatePicker = {
-        val cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Jakarta"))
+        val cal = Calendar.getInstance(TimeZone.getTimeZone(AppConfig.TIMEZONE))
         // Jika sudah ada tanggal terpilih, inisialisasi picker dengan tanggal tersebut
         if (!followUpDate.isNullOrBlank()) {
             try {

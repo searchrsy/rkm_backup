@@ -1,26 +1,34 @@
 package com.example.config
 
+import com.example.BuildConfig
+
 /**
  * ============================================================
- *  SATU-SATUNYA TEMPAT untuk mengubah server & API key.
- *  Semua URL lain di aplikasi diturunkan dari file ini.
- * ============================================================
+ *  Aplikasi TIDAK diedit per cabang.
+ *  Semua nilai cabang dibaca dari SATU file: cabang.properties
+ *  (di root proyek), lalu diteruskan oleh Gradle lewat BuildConfig.
  *
- * Kalau alamat server berubah (misalnya domain ngrok baru):
- *   1. Ubah SERVER_HOST di bawah.
- *   2. Naikkan CONFIG_VERSION (+1) supaya HP yang sudah terpasang
- *      ikut memakai alamat baru setelah update APK.
- *   3. Build APK baru.
+ *  Ganti cabang = edit cabang.properties -> build APK.
+ *  (Naikkan CONFIG_VERSION bila SERVER_HOST / APP_PATH berubah.)
+ * ============================================================
  */
 object AppConfig {
 
-    // ---------- UBAH DI SINI ----------
+    // ---------- DIBACA DARI cabang.properties ----------
     const val SERVER_SCHEME = "https"
-    const val SERVER_HOST = "numbing-brigade-glacier.ngrok-free.dev"
-    const val APP_PATH = "/sales-gps-dashboard"      // folder aplikasi di server
-    const val API_KEY = "akuseorangkapiten"          // harus sama dengan di server (PHP)
-    const val CONFIG_VERSION = 1                     // naikkan jika SERVER_HOST/APP_PATH diganti
-    // ----------------------------------
+    const val SERVER_HOST = BuildConfig.SERVER_HOST
+    const val APP_PATH = BuildConfig.APP_PATH
+    const val API_KEY = BuildConfig.API_KEY
+    const val CONFIG_VERSION = BuildConfig.CONFIG_VERSION
+
+    const val CABANG_NAMA = BuildConfig.CABANG_NAMA
+    const val CABANG_LABEL = BuildConfig.CABANG_LABEL        // cadangan jika server belum menjawab
+    const val CABANG_SUBTITLE = BuildConfig.CABANG_SUBTITLE
+    const val TIMEZONE = BuildConfig.TIMEZONE
+    const val MAP_LAT = BuildConfig.MAP_LAT
+    const val MAP_LNG = BuildConfig.MAP_LNG
+    const val USER_AGENT = "RKM-${BuildConfig.CABANG_NAMA}-Android/1.0"
+    // ---------------------------------------------------
 
     private const val ORIGIN = "$SERVER_SCHEME://$SERVER_HOST"
 

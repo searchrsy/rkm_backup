@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "RKM SPI Batu"
+rootProject.name = "RKM SPI"
 
 include(":app")

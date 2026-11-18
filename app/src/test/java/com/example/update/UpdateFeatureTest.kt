@@ -94,7 +94,7 @@ class UpdateFeatureTest {
     @Test
     fun `test SHA256 calculation and verification`() {
         val testFile = File(context.cacheDir, "test_file.bin")
-        val content = "Update APK Test Content SPI Batu 2026".toByteArray()
+        val content = "Update APK Test Content SPI 2026".toByteArray()
         FileOutputStream(testFile).use { it.write(content) }
 
         val calculated = downloader.calculateSha256(testFile)
@@ -118,7 +118,7 @@ class UpdateFeatureTest {
         val data = UpdateData(
             versionCode = 99L,
             versionName = "2.0.0",
-            apkUrl = "https://numbing-brigade-glacier.ngrok-free.dev/sales-gps-dashboard/apk/apk/app-release.apk",
+            apkUrl = UpdateConfig.APK_DOWNLOAD_URL,
             sha256 = expectedSha,
             size = content.size.toLong()
         )
@@ -185,7 +185,7 @@ class UpdateFeatureTest {
         val sampleData = UpdateData(
             versionCode = 5L,
             versionName = "1.2.0",
-            apkUrl = "https://numbing-brigade-glacier.ngrok-free.dev/sales-gps-dashboard/apk/apk/app-release.apk",
+            apkUrl = UpdateConfig.APK_DOWNLOAD_URL,
             sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             size = 5000000L,
             changelog = "Perbaikan GPS dan pembaruan stabil"

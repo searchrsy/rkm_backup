@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import android.content.Context
+import com.example.config.AppConfig
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
@@ -89,11 +90,11 @@ fun OsmMapView(
     val latestOnMemberSelected = rememberUpdatedState(onMemberSelected)
     val overlayState = remember { MapOverlayState() }
 
-    // Batu, Jawa Timur sebagai titik pusat default SPI Batu
-    val defaultCenter = remember { GeoPoint(-7.8712, 112.5273) }
+    // Titik pusat default peta diambil dari cabang.properties (MAP_LAT, MAP_LNG)
+    val defaultCenter = remember { GeoPoint(AppConfig.MAP_LAT, AppConfig.MAP_LNG) }
     val mapView = remember {
         Configuration.getInstance().apply {
-            userAgentValue = "RKMSPIBatu-Android/1.0"
+            userAgentValue = AppConfig.USER_AGENT
             osmdroidBasePath = File(context.cacheDir, "osmdroid")
             osmdroidTileCache = File(context.cacheDir, "osmdroid/tiles")
             tileFileSystemCacheMaxBytes = 100L * 1024L * 1024L

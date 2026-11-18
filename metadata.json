@@ -1,6 +1,6 @@
 {
-  "name": "Remix RKM SPI Batu",
-  "description": "Aplikasi kunjungan MR RKM SPI Batu Stock Point Indogrosir Batu terintegrasi OpenStreetMap dan backend PHP",
+  "name": "RKM SPI",
+  "description": "RKM SPI",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

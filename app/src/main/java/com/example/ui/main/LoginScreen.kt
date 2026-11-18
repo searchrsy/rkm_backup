@@ -5,6 +5,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,6 +71,7 @@ import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.model.SalesmanOption
 import com.example.ui.theme.RedError
+import kotlinx.coroutines.delay
 
 // Palet khusus layar login (lokal, tidak memengaruhi tema aplikasi lain)
 private val LoginBg = Color.White
@@ -101,15 +105,28 @@ fun LoginScreen(
 
     val focusManager = LocalFocusManager.current
 
-    // Animasi masuk: hanya berjalan saat layar pertama kali dibuka.
+    // Logo dianggap selesai bila tidak ada logo dari server, atau sudah berhasil/gagal dimuat.
+    var logoDone by remember(logoUrl) { mutableStateOf(logoUrl.isBlank()) }
+    // Batas tunggu logo 8 detik supaya layar tidak menggantung saat jaringan lambat.
+    LaunchedEffect(logoUrl) {
+        if (logoUrl.isNotBlank()) {
+            delay(8000)
+            logoDone = true
+        }
+    }
+    // Halaman login menampilkan loading sampai config server (label, daftar salesman) dan logo siap.
+    val pageLoading = configLoading || !logoDone
+
+    // Animasi masuk: berjalan setelah loading selesai (hanya saat layar pertama kali dibuka).
     // rememberSaveable membuat animasi tidak diulang ketika layar diputar (rotasi).
     var started by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) { started = true }
+    LaunchedEffect(pageLoading) { if (!pageLoading) started = true }
 
     Surface(
         modifier = modifier.fillMaxSize(),
         color = LoginBg
     ) {
+      Box(modifier = Modifier.fillMaxSize()) {
         // Kolom luar: bisa di-scroll (layar pendek / landscape) dan menengahkan form di layar lebar
         Column(
             modifier = Modifier
@@ -150,6 +167,8 @@ fun LoginScreen(
                                     contentScale = ContentScale.Fit,
                                     placeholder = painterResource(id = R.drawable.ic_rkm_logo),
                                     error = painterResource(id = R.drawable.ic_rkm_logo),
+                                    onSuccess = { logoDone = true },
+                                    onError = { logoDone = true },
                                     modifier = Modifier.size(width = 140.dp, height = 56.dp)
                                 )
                             }
@@ -166,7 +185,7 @@ fun LoginScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "RKM SPI",
+                            text = "",
                             fontSize = 34.sp,
                             fontWeight = FontWeight.Bold,
                             color = LoginNavy
@@ -369,7 +388,7 @@ fun LoginScreen(
 
                 Entrance(started = started, delayMillis = 500, modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Aplikasi Khusus Salesman Stock Point Indogrosir",
+                        text = "RKM SPI",
                         fontSize = 12.sp,
                         color = LoginFooter,
                         textAlign = TextAlign.Center,
@@ -378,6 +397,33 @@ fun LoginScreen(
                 }
             }
         }
+
+        // Layar loading: menutupi form sampai semua data siap (form tetap dibuat di belakang
+        // supaya logo bisa mulai dimuat). Menyerap sentuhan agar form tidak bisa ditekan.
+        if (pageLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(LoginBg)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(36.dp),
+                        strokeWidth = 3.dp,
+                        color = LoginNavy
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("Memuat...", fontSize = 13.sp, color = LoginTextMuted)
+                }
+            }
+        }
+      }
     }
 }
 
