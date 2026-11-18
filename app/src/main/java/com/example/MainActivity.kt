@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.example.ui.components.LocationGate
 import com.example.ui.main.LoginScreen
 import com.example.ui.main.MainScreen
 import com.example.ui.main.MainViewModel
@@ -116,38 +117,41 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    if (state.isLoggedIn) {
-                        BackHandler(enabled = state.activeLaporanMember != null || state.selectedMember != null) {
-                            if (state.activeLaporanMember != null) {
-                                viewModel.openLaporan(null)
-                            } else if (state.selectedMember != null) {
-                                viewModel.selectMember(null)
+                    // Cegatan lokasi: login & seluruh pemakaian aplikasi diblokir selama izin/GPS lokasi mati
+                    LocationGate {
+                        if (state.isLoggedIn) {
+                            BackHandler(enabled = state.activeLaporanMember != null || state.selectedMember != null) {
+                                if (state.activeLaporanMember != null) {
+                                    viewModel.openLaporan(null)
+                                } else if (state.selectedMember != null) {
+                                    viewModel.selectMember(null)
+                                }
                             }
+
+                            MainScreen(
+                                state = state,
+                                viewModel = viewModel,
+                                onOpenAppSettings = {
+                                    openAppSettings()
+                                }
+                            )
+                        } else {
+                            // Muat label cabang + daftar salesman dari server tiap layar login tampil
+                            LaunchedEffect(Unit) { viewModel.loadLoginConfig() }
+
+                            LoginScreen(
+                                isLoading = state.loginLoading,
+                                errorMessage = state.loginError,
+                                cabangLabel = state.cabangLabel,
+                                subtitle = state.loginSubtitle,
+                                logoUrl = state.logoUrl,
+                                salesmen = state.salesmen,
+                                configLoading = state.loginConfigLoading,
+                                configError = state.loginConfigError,
+                                onRetryConfig = { viewModel.loadLoginConfig() },
+                                onLogin = { code, pass -> viewModel.login(code, pass) }
+                            )
                         }
-
-                        MainScreen(
-                            state = state,
-                            viewModel = viewModel,
-                            onOpenAppSettings = {
-                                openAppSettings()
-                            }
-                        )
-                    } else {
-                        // Muat label cabang + daftar salesman dari server tiap layar login tampil
-                        LaunchedEffect(Unit) { viewModel.loadLoginConfig() }
-
-                        LoginScreen(
-                            isLoading = state.loginLoading,
-                            errorMessage = state.loginError,
-                            cabangLabel = state.cabangLabel,
-                            subtitle = state.loginSubtitle,
-                            logoUrl = state.logoUrl,
-                            salesmen = state.salesmen,
-                            configLoading = state.loginConfigLoading,
-                            configError = state.loginConfigError,
-                            onRetryConfig = { viewModel.loadLoginConfig() },
-                            onLogin = { code, pass -> viewModel.login(code, pass) }
-                        )
                     }
 
                     // Dialog popup pembaruan (hanya muncul jika ada update baru yang belum dipasang)
