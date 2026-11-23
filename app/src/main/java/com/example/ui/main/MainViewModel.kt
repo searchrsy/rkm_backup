@@ -8,9 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.BuildConfig
 import com.example.config.AppConfig
 import com.example.data.local.DraftRepository
+import com.example.data.local.GpsBatchQueue
 import com.example.data.local.SessionManager
 import com.example.data.model.DraftLaporan
-import com.example.data.model.GpsPayload
+import com.example.data.model.GpsBatchPayload
+import com.example.data.model.GpsPoint
 import com.example.data.model.LoginConfigResponse
 import com.example.data.model.LoginRequest
 import com.example.data.model.LokasiSalesItem
@@ -75,6 +77,8 @@ class MainViewModel(
 
     private val sessionManager = SessionManager(application)
     private val draftRepository = DraftRepository(application)
+    private val gpsQueue = GpsBatchQueue(application)
+    private val isFlushingGps = java.util.concurrent.atomic.AtomicBoolean(false)
 
     val hasRequestedInitialPermissions: Boolean
         get() = sessionManager.hasRequestedInitialPermissions
@@ -388,6 +392,11 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Dipanggil tiap titik GPS baru (sekitar tiap AppConfig.GPS_SAMPLE_INTERVAL_MS).
+     * Titik hanya dimasukkan ke antrian; pengiriman ke server dilakukan sebagai 1 batch
+     * (lihat GpsBatchQueue.shouldFlush) supaya hemat request.
+     */
     fun sendGpsLocation(lat: Double, lon: Double, accuracy: Float? = null, speed: Float? = null) {
         // Validasi latitude & longitude: null/rentang sah
         if (lat < -90.0 || lat > 90.0 || lon < -180.0 || lon > 180.0 || (lat == 0.0 && lon == 0.0)) {
@@ -407,56 +416,98 @@ class MainViewModel(
             return
         }
 
+        val now = System.currentTimeMillis()
+        val waktu = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(now))
+        viewModelScope.launch(Dispatchers.IO) {
+            gpsQueue.enqueue(
+                GpsPoint(
+                    kodeSalesman = actualSalesCode,
+                    latitude = lat,
+                    longitude = lon,
+                    akurasi = accuracy,
+                    kecepatan = speed,
+                    timestamp = now,
+                    waktuGps = waktu
+                )
+            )
+            flushGpsIfNeeded()
+        }
+    }
+
+    /** Kirim antrian GPS jika sudah waktunya (jumlah/umur) atau [force]. Aman dipanggil berulang. */
+    private fun flushGpsIfNeeded(force: Boolean = false) {
+        if (!gpsQueue.shouldFlush(System.currentTimeMillis(), force)) return
+        if (!isFlushingGps.compareAndSet(false, true)) return
+
         viewModelScope.launch {
             _uiState.update { it.copy(isGpsSending = true) }
+            var anySent = false
             try {
-                withContext(Dispatchers.IO) {
-                    val currentTimestamp = System.currentTimeMillis()
-                    val nowIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(currentTimestamp))
-                    val payload = GpsPayload(
-                        kodeSalesman = actualSalesCode,
-                        kodeSales = actualSalesCode,
-                        deviceId = sessionManager.deviceId,
-                        latitude = lat,
-                        longitude = lon,
-                        akurasi = accuracy,
-                        kecepatan = speed,
-                        timestamp = currentTimestamp,
-                        waktu = nowIso,
-                        waktuGps = nowIso
-                    )
-
-                    val api = ApiClient.createService(sessionManager)
-                    val gpsUrl = sessionManager.gpsEndpointUrl
-                    val apiKey = sessionManager.gpsApiKey
-
-                    val response = api.sendGps(gpsUrl, apiKey, payload)
-                    if (response.isSuccessful) {
-                        val body = response.body()
-                        if (body?.success == true) {
-                            if (BuildConfig.DEBUG) {
-                                Log.d("RKM_GPS", "Server menerima GPS: ${body.message}")
-                            }
-                        } else {
-                            Log.e(
-                                "RKM_GPS",
-                                "Server menolak GPS: HTTP ${response.code()}, body=${body?.message}"
-                            )
-                        }
-                    } else {
-                        val errString = response.errorBody()?.string() ?: ""
-                        Log.e("RKM_GPS", "Kirim GPS gagal HTTP ${response.code()}: $errString")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("RKM_GPS", "Kirim GPS error koneksi: ${e.message}")
+                anySent = withContext(Dispatchers.IO) { flushGpsBatches() }
             } finally {
+                isFlushingGps.set(false)
                 _uiState.update { it.copy(isGpsSending = false) }
-                // Perbarui lokasi terakhir dan riwayat dari server setelah pengiriman
+            }
+            // Segarkan peta/riwayat HANYA setelah batch berhasil terkirim (bukan tiap titik)
+            if (anySent && sessionManager.isLoggedIn) {
                 fetchLokasiTerakhir()
                 fetchRiwayatLokasi()
             }
         }
+    }
+
+    /** Kirim antrian per chunk. Mengembalikan true jika minimal satu batch diterima server. */
+    private suspend fun flushGpsBatches(): Boolean {
+        val api = ApiClient.createService(sessionManager)
+        val url = sessionManager.gpsEndpointUrl
+        val apiKey = sessionManager.gpsApiKey
+        val deviceId = sessionManager.deviceId
+        var anySent = false
+        gpsQueue.markAttempt()
+
+        while (true) {
+            val chunk = gpsQueue.peekChunk(AppConfig.GPS_FLUSH_CHUNK)
+            if (chunk.isEmpty()) break
+            val newest = chunk.last()
+            val payload = GpsBatchPayload(
+                kodeSalesman = newest.kodeSalesman,
+                kodeSales = newest.kodeSalesman,
+                deviceId = deviceId,
+                latitude = newest.latitude,
+                longitude = newest.longitude,
+                akurasi = newest.akurasi,
+                kecepatan = newest.kecepatan,
+                timestamp = newest.timestamp,
+                waktu = newest.waktuGps,
+                waktuGps = newest.waktuGps,
+                points = chunk
+            )
+
+            try {
+                val response = api.sendGpsBatch(url, apiKey, payload)
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true) {
+                    gpsQueue.remove(chunk)
+                    gpsQueue.markSuccess()
+                    anySent = true
+                    if (BuildConfig.DEBUG) {
+                        Log.d("RKM_GPS", "Batch GPS diterima: ${chunk.size} titik, sisa antrian ${gpsQueue.size()}")
+                    }
+                } else {
+                    val err = if (response.isSuccessful) body?.message else response.errorBody()?.string()
+                    Log.e("RKM_GPS", "Batch GPS ditolak HTTP ${response.code()}: $err")
+                    gpsQueue.markFailure(System.currentTimeMillis())
+                    break // titik tetap di antrian; coba lagi setelah masa tunggu
+                }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("RKM_GPS", "Kirim batch GPS error koneksi: ${e.message}")
+                gpsQueue.markFailure(System.currentTimeMillis())
+                break
+            }
+        }
+        return anySent
     }
 
     fun loadRkm() {
@@ -742,6 +793,8 @@ class MainViewModel(
     }
 
     fun logout() {
+        // Coba kirim sisa titik GPS dulu (memakai API key, tidak butuh token sesi)
+        flushGpsIfNeeded(force = true)
         sessionManager.clearSession()
         _uiState.update {
             it.copy(

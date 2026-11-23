@@ -204,4 +204,13 @@ class UpdateFeatureTest {
         updateManager.onCloseFailedClicked()
         assertEquals(UpdateState.Idle, updateManager.state.value)
     }
+
+    @Test
+    fun `test update is mandatory and cannot be postponed`() {
+        val data = UpdateData(versionCode = 9L, versionName = "9.0", forceUpdate = false)
+        assertTrue(data.isMandatory)
+        assertEquals(data, UpdateState.Available(data, isMetered = false).dataOrNull())
+        assertNull(UpdateState.Idle.dataOrNull())
+        assertEquals(data, UpdateState.Failed(data, "x").dataOrNull())
+    }
 }

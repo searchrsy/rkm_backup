@@ -164,10 +164,44 @@ data class GpsPayload(
     @Json(name = "waktu_gps") val waktuGps: String? = null
 )
 
+/** Satu titik GPS di dalam antrian batch. */
+@JsonClass(generateAdapter = true)
+data class GpsPoint(
+    @Json(name = "kode_salesman") val kodeSalesman: String,
+    @Json(name = "latitude") val latitude: Double,
+    @Json(name = "longitude") val longitude: Double,
+    @Json(name = "akurasi") val akurasi: Float? = null,
+    @Json(name = "kecepatan") val kecepatan: Float? = null,
+    @Json(name = "timestamp") val timestamp: Long,
+    @Json(name = "waktu_gps") val waktuGps: String
+)
+
+/**
+ * Payload batch ke gps.php.
+ * Field tingkat atas = titik TERBARU (sama seperti GpsPayload lama), sehingga gps.php versi lama
+ * yang belum mengenal "points" tetap bisa menyimpan titik terbaru tanpa error.
+ */
+@JsonClass(generateAdapter = true)
+data class GpsBatchPayload(
+    @Json(name = "kode_salesman") val kodeSalesman: String,
+    @Json(name = "kode_sales") val kodeSales: String? = null,
+    @Json(name = "device_id") val deviceId: String,
+    @Json(name = "latitude") val latitude: Double,
+    @Json(name = "longitude") val longitude: Double,
+    @Json(name = "akurasi") val akurasi: Float? = null,
+    @Json(name = "kecepatan") val kecepatan: Float? = null,
+    @Json(name = "timestamp") val timestamp: Long,
+    @Json(name = "waktu") val waktu: String? = null,
+    @Json(name = "waktu_gps") val waktuGps: String? = null,
+    @Json(name = "batch") val batch: Boolean = true,
+    @Json(name = "points") val points: List<GpsPoint>
+)
+
 @JsonClass(generateAdapter = true)
 data class GpsResponse(
     @Json(name = "success") val success: Boolean,
-    @Json(name = "message") val message: String? = null
+    @Json(name = "message") val message: String? = null,
+    @Json(name = "accepted") val accepted: Int? = null
 )
 
 @JsonClass(generateAdapter = true)

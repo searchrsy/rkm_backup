@@ -70,53 +70,17 @@ class SessionManager(context: Context) {
             return id
         }
 
-    /**
-     * URL endpoint untuk menerima data GPS (gps.php)
-     * Diturunkan dari base URL + AppConfig.PATH_GPS
-     */
+    /** URL endpoint GPS (gps.php). Semua penurunan URL ada di AppConfig. */
     val gpsEndpointUrl: String
-        get() {
-            val base = baseUrl
-            return try {
-                val uri = java.net.URI(base)
-                val portStr = if (uri.port != -1) ":${uri.port}" else ""
-                "${uri.scheme}://${uri.host}$portStr${AppConfig.PATH_GPS}"
-            } catch (_: Exception) {
-                AppConfig.GPS_URL
-            }
-        }
+        get() = AppConfig.gpsUrl(baseUrl)
 
-    /**
-     * URL base untuk API dashboard (lokasi_terakhir.php dan riwayat_lokasi.php)
-     */
+    /** URL base API dashboard (lokasi_terakhir.php dan riwayat_lokasi.php). */
     val dashboardApiBaseUrl: String
-        get() {
-            val base = baseUrl
-            return try {
-                val uri = java.net.URI(base)
-                val portStr = if (uri.port != -1) ":${uri.port}" else ""
-                val path = uri.path ?: ""
-                if (path.contains(AppConfig.APP_PATH)) {
-                    "${uri.scheme}://${uri.host}$portStr${AppConfig.APP_PATH}/api/"
-                } else {
-                    "${uri.scheme}://${uri.host}$portStr/api/"
-                }
-            } catch (_: Exception) {
-                AppConfig.DASHBOARD_API_URL
-            }
-        }
+        get() = AppConfig.dashboardApiUrl(baseUrl)
 
     /** Cadangan jika dashboardApiBaseUrl memberi 404: https://host/api/ */
     val rootApiBaseUrl: String
-        get() {
-            return try {
-                val uri = java.net.URI(baseUrl)
-                val portStr = if (uri.port != -1) ":${uri.port}" else ""
-                "${uri.scheme}://${uri.host}$portStr/api/"
-            } catch (_: Exception) {
-                baseUrl
-            }
-        }
+        get() = AppConfig.rootApiUrl(baseUrl)
 
     // Cache konfigurasi login (label cabang + daftar salesman) agar tetap tampil saat offline
     private val loginConfigAdapter by lazy {

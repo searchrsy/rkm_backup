@@ -179,7 +179,7 @@ fun MainScreen(
         if (state.isLoggedIn) {
             requestLocationWithCheck()
             while (true) {
-                kotlinx.coroutines.delay(30_000L)
+                kotlinx.coroutines.delay(com.example.config.AppConfig.GPS_SAMPLE_INTERVAL_MS)
                 val fineGranted = ContextCompat.checkSelfPermission(
                     context, Manifest.permission.ACCESS_FINE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED

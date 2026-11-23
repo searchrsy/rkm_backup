@@ -47,8 +47,8 @@ android {
     applicationId = cabang("APPLICATION_ID", "com.aistudio.rkmspi.$cSlug")
     minSdk = 26
     targetSdk = 36
-    versionCode = 5
-    versionName = "1.0.4"
+    versionCode = 8
+    versionName = "1.0.7"
 
     buildConfigField("boolean", "UPDATE_FEATURE_ENABLED", "true")
 
@@ -70,6 +70,12 @@ android {
 
   androidResources {
     localeFilters += listOf("id", "en")
+  }
+
+  // Buang blob metadata dependensi (khusus Google Play) dari APK: lebih kecil, fungsi aplikasi sama.
+  dependenciesInfo {
+    includeInApk = false
+    includeInBundle = false
   }
 
   // Do not remove or modify these signingConfigs. They are necessary for building, installing,

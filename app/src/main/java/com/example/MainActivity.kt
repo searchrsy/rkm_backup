@@ -48,6 +48,8 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         updateManager.checkPermissionAndResumeInstall()
+        // Cek versi baru saat aplikasi dibuka/kembali (dibatasi interval); update bersifat wajib
+        updateManager.checkUpdateIfDue()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

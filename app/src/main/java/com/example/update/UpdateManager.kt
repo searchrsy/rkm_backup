@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
 import android.util.Log
+import com.example.config.AppConfig
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -133,14 +134,34 @@ class UpdateManager(
         }
     }
 
+    @Volatile
+    private var lastCheckAt = 0L
+
     /**
      * Memeriksa pembaruan setiap kali pengguna berhasil login.
      * Satu login berhasil = satu HTTP GET baru ke check.php.
-     * Tidak dibatasi oleh flag startup in-process maupun tanggal hari ini.
      */
-    fun checkUpdateOnLogin() {
+    fun checkUpdateOnLogin() = performCheck()
+
+    /**
+     * Dipanggil saat aplikasi dibuka/kembali ke layar (MainActivity.onResume).
+     * Memeriksa maksimal sekali per AppConfig.UPDATE_RECHECK_INTERVAL_MS agar versi baru
+     * segera terdeteksi tanpa menghabiskan kuota request.
+     */
+    fun checkUpdateIfDue() {
+        val now = System.currentTimeMillis()
+        if (lastCheckAt != 0L && now - lastCheckAt < AppConfig.UPDATE_RECHECK_INTERVAL_MS) return
+        performCheck()
+    }
+
+    private fun performCheck() {
+        // Jangan menimpa dialog yang sedang tampil/berjalan (unduh, pasang, gagal, dst.)
+        if (_state.value !is UpdateState.Idle) return
+        lastCheckAt = System.currentTimeMillis()
+
         scope.launch {
             mutex.withLock {
+                if (_state.value !is UpdateState.Idle) return@withLock
                 val installedCode = getInstalledVersionCode()
 
                 _state.value = UpdateState.Checking
@@ -149,15 +170,14 @@ class UpdateManager(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.d(TAG, "Error checking update on login: ${e.message}")
+                    Log.d(TAG, "Error checking update: ${e.message}")
                     null
                 }
 
                 if (updateData != null) {
-                    val metered = isNetworkMetered()
                     _state.value = UpdateState.Available(
                         data = updateData,
-                        isMetered = metered,
+                        isMetered = isNetworkMetered(),
                         showMeteredWarning = false
                     )
                 } else {
@@ -198,6 +218,8 @@ class UpdateManager(
      * Dipanggil saat pengguna menekan "Nanti" atau "Tunggu Wi-Fi".
      */
     fun onLaterClicked() {
+        // Update wajib: tidak boleh ditunda
+        if (_state.value.dataOrNull()?.isMandatory == true) return
         _state.value = UpdateState.Idle
     }
 
@@ -225,6 +247,8 @@ class UpdateManager(
     }
 
     fun onCloseFailedClicked() {
+        // Update wajib: dialog gagal tidak boleh ditutup, hanya "Coba Lagi"
+        if (_state.value.dataOrNull()?.isMandatory == true) return
         _state.value = UpdateState.Idle
     }
 
@@ -321,6 +345,10 @@ class UpdateManager(
             if (installer.canInstallPackages()) {
                 proceedInstallation(current.data, current.apkFile)
             }
+        } else if (current is UpdateState.Installing && current.data.isMandatory) {
+            // Pemasang sistem dibatalkan pengguna lalu kembali ke aplikasi: tampilkan tombol "Pasang"
+            // lagi agar dialog wajib tidak macet di status "Membuka pemasang paket...".
+            _state.value = UpdateState.ReadyToInstall(current.data, current.apkFile)
         } else if (current is UpdateState.Failed && current.data != null) {
             val cachedApk = downloader.getExistingValidApk(current.data)
             if (cachedApk != null && installer.canInstallPackages()) {

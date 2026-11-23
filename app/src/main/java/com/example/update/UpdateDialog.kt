@@ -66,7 +66,11 @@ fun UpdateDialog(
         return
     }
 
+    // Update wajib: dialog tidak bisa ditutup (back/klik luar/tombol Nanti) sampai terpasang
+    val mandatory = state.dataOrNull()?.isMandatory == true
+
     BackHandler(enabled = true) {
+        if (mandatory) return@BackHandler
         when (state) {
             is UpdateState.Downloading -> onCancelDownload()
             is UpdateState.Available -> onLater()
@@ -77,15 +81,17 @@ fun UpdateDialog(
 
     Dialog(
         onDismissRequest = {
-            if (state is UpdateState.Downloading) {
+            if (mandatory) {
+                // abaikan
+            } else if (state is UpdateState.Downloading) {
                 onCancelDownload()
             } else {
                 onLater()
             }
         },
         properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = state !is UpdateState.Downloading && state !is UpdateState.Verifying
+            dismissOnBackPress = !mandatory,
+            dismissOnClickOutside = !mandatory && state !is UpdateState.Downloading && state !is UpdateState.Verifying
         )
     ) {
         Surface(
@@ -142,6 +148,7 @@ fun UpdateDialog(
                             data = state.data,
                             reason = state.reason,
                             canRetry = state.canRetry,
+                            mandatory = mandatory,
                             onRetry = onRetry,
                             onClose = onCloseFailed
                         )
@@ -204,7 +211,7 @@ private fun AvailableContent(
         }
     }
 
-    if (data.forceUpdate) {
+    if (data.isMandatory) {
         Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier
@@ -216,7 +223,7 @@ private fun AvailableContent(
             Icon(Icons.Default.Info, contentDescription = null, tint = NavyPrimary, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Pembaruan ini sangat disarankan untuk kelancaran sinkronisasi.",
+                text = "Pembaruan ini wajib dipasang agar aplikasi dapat digunakan.",
                 fontSize = 11.sp,
                 color = NavyPrimary,
                 fontWeight = FontWeight.Medium
@@ -269,10 +276,12 @@ private fun AvailableContent(
 
         Spacer(modifier = Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onLater) {
-                Text("Tunggu Wi-Fi", color = TextGray, fontSize = 13.sp)
+            if (!data.isMandatory) {
+                TextButton(onClick = onLater) {
+                    Text("Tunggu Wi-Fi", color = TextGray, fontSize = 13.sp)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
             }
-            Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = onProceedMetered,
                 colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary)
@@ -283,10 +292,12 @@ private fun AvailableContent(
     } else {
         Spacer(modifier = Modifier.height(18.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onLater, modifier = Modifier.testTag("btn_update_later")) {
-                Text("Nanti", color = TextGray, fontSize = 13.sp)
+            if (!data.isMandatory) {
+                TextButton(onClick = onLater, modifier = Modifier.testTag("btn_update_later")) {
+                    Text("Nanti", color = TextGray, fontSize = 13.sp)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
             }
-            Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = onUpdateNow,
                 colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
@@ -412,6 +423,7 @@ private fun FailedContent(
     data: UpdateData?,
     reason: String,
     canRetry: Boolean,
+    mandatory: Boolean,
     onRetry: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -434,11 +446,13 @@ private fun FailedContent(
     )
     Spacer(modifier = Modifier.height(16.dp))
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        TextButton(onClick = onClose, modifier = Modifier.testTag("btn_close_failed")) {
-            Text("Tutup", color = TextGray, fontSize = 13.sp)
+        if (!mandatory) {
+            TextButton(onClick = onClose, modifier = Modifier.testTag("btn_close_failed")) {
+                Text("Tutup", color = TextGray, fontSize = 13.sp)
+            }
         }
         if (canRetry && data != null) {
-            Spacer(modifier = Modifier.width(8.dp))
+            if (!mandatory) Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = onRetry,
                 colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),

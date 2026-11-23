@@ -1,6 +1,7 @@
 package com.example.data.network
 
 import com.example.config.AppConfig
+import com.example.data.model.GpsBatchPayload
 import com.example.data.model.GpsPayload
 import com.example.data.model.GpsResponse
 import com.example.data.model.LoginRequest
@@ -63,6 +64,14 @@ interface RkmApiService {
         @Url url: String,
         @Header("X-API-Key") apiKey: String,
         @Body payload: GpsPayload
+    ): Response<GpsResponse>
+
+    @POST
+    @Headers("Content-Type: application/json")
+    suspend fun sendGpsBatch(
+        @Url url: String,
+        @Header("X-API-Key") apiKey: String,
+        @Body payload: GpsBatchPayload
     ): Response<GpsResponse>
 
     @GET

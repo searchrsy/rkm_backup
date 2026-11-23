@@ -25,3 +25,12 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.openjsse.**
 -dontwarn okhttp3.internal.platform.**
+
+# ---- Perkecil ukuran APK (R8 sudah aktif; aturan di bawah aman & tanpa refleksi) ----
+-allowaccessmodification
+# Buang pemanggilan Log verbose/debug/info di APK release (Log.w dan Log.e tetap ada)
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}

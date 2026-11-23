@@ -1,5 +1,6 @@
 package com.example.update
 
+import com.example.config.AppConfig
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import java.io.File
@@ -22,6 +23,10 @@ data class UpdateData(
     @Json(name = "changelog") val changelog: String? = null,
     @Json(name = "forceUpdate") val forceUpdate: Boolean = false
 ) {
+    /** Wajib dipasang: dialog tidak bisa ditutup. Diatur AppConfig.UPDATE_WAJIB atau forceUpdate dari server. */
+    val isMandatory: Boolean
+        get() = AppConfig.UPDATE_WAJIB || forceUpdate
+
     val sizeInMbFormatted: String
         get() {
             if (size <= 0) return "0 MB"
@@ -64,4 +69,15 @@ sealed class UpdateState {
         val reason: String,
         val canRetry: Boolean = true
     ) : UpdateState()
+}
+
+/** Data update dari state mana pun yang membawa data (null untuk Idle/Checking). */
+fun UpdateState.dataOrNull(): UpdateData? = when (this) {
+    is UpdateState.Available -> data
+    is UpdateState.Downloading -> data
+    is UpdateState.Verifying -> data
+    is UpdateState.ReadyToInstall -> data
+    is UpdateState.Installing -> data
+    is UpdateState.Failed -> data
+    else -> null
 }
